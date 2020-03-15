@@ -1,17 +1,19 @@
 import requests, json
 from util import *
+from data import *
 
 class TransitApi:
     patApiKey = read('API_KEY.txt').strip()
     domainUrl = 'http://realtime.portauthority.org/bustime/api/v3/'
+    routes = None
 
     def __init__(self, args=None):
         self.params = {'key':self.patApiKey, 'format':'json'}
         self.liveRoutes = []
         if args == 'u':
-            self.routes = self.getRoutes('u')
+            self.routes = self.buildRoutes('u')
         else:
-            self.routes = self.getRoutes()
+            self.routes = self.buildRoutes()
     
     def queryApi(self, method, params=None):
         baseUrl = self.domainUrl + method
@@ -19,7 +21,7 @@ class TransitApi:
         params.update(self.params)
         return requests.get(baseUrl,params).json()
     
-    def getRoutes(self, args=None):
+    def buildRoutes(self, args=None):
         if args != 'u':
             try:
                 self.routes = read_json('data/routes.json')
@@ -45,7 +47,3 @@ class TransitApi:
                 self.routes[rt]['stops'] = stops['stops']
                 print(rt + ' : ' + str(len(stops['stops'])))
                 self.liveRoutes.append(rt)
-
-
-    
-tApi = TransitApi()

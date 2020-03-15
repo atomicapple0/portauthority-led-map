@@ -1,4 +1,6 @@
 from util import *
+from data import *
+from transitApi import TransitApi
 
 class Bus:
     def __init__(self, id, route, destination, lat, lon, timestamp):
@@ -9,6 +11,8 @@ class Bus:
         self.location = (lat,lon)
         self.timestamp = timestamp
         self.currStop = None
+
+# Stop = collections.namedtuple('Stop', ['x', 'y'])
 
 class Route:
     def __init__(self, id, color, stops, n):
@@ -34,3 +38,22 @@ class Route:
             else:
                 D = D+d
         return newStops
+
+class Routes:
+    routes_ids = ACTIVE_ROUTES
+    def __init__(self, n):
+        tApi = TransitApi()
+        tApi.buildRoutes()
+        self.routes = []
+        for rt_id in routes_ids:
+            rtJson = tApi[rt_id]
+            stops = [Stop(stop['lon'],stop['lat']) for stop in rtJson['stops']]
+            rt = Route(rt_id, rtJson['rtclr'], stops, n)
+            
+
+    def all(self):
+        for k in self.routes:
+            yield self.routes[k]
+
+    def get(self, name):
+        return self.routes[name]
