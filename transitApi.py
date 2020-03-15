@@ -2,7 +2,7 @@ import requests, json
 from util import *
 
 class TransitApi:
-    patApiKey = read('data/API_KEY.txt').strip()
+    patApiKey = read('API_KEY.txt').strip()
     domainUrl = 'http://realtime.portauthority.org/bustime/api/v3/'
 
     def __init__(self, args=None):
