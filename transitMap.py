@@ -2,17 +2,19 @@ from util import *
 from data import *
 from transitApi import TransitApi
 
+
 class Bus:
     def __init__(self, id, route, destination, lat, lon, timestamp):
         self.id = id
         self.route = route
-        direction = None #### To Do ####
+        direction = None  # To Do ####
         self.direction = direction
-        self.location = (lat,lon)
+        self.location = (lat, lon)
         self.timestamp = timestamp
         self.currStop = None
 
 # Stop = collections.namedtuple('Stop', ['x', 'y'])
+
 
 class Route:
     def __init__(self, id, color, stops, n):
@@ -21,35 +23,37 @@ class Route:
         self.stops = self.resampleStops(stops, n)
         self.bus_ids = None
         self.buses = None
-    
+
     def resampleStops(self, stops, n):
         I = pathLength(stops) / (n-1)
         D = 0
         newStops = stops[0]
-        for i in range(1,len(stops)):
-            d = distance(stops[i-1],stops[i])
+        for i in range(1, len(stops)):
+            d = distance(stops[i-1], stops[i])
             if (D+d) >= I:
                 q = Stop()
                 q.x = stops[i-1] + ((I-D)/d) * (stops[i] - stops[i-1])
                 q.y = stops[i-1] + ((I-D)/d) * (stops[i] - stops[i-1])
                 newStops.append(q)
-                stops.insert(i,q)
+                stops.insert(i, q)
                 D = 0
             else:
                 D = D+d
         return newStops
 
+
 class Routes:
     routes_ids = ACTIVE_ROUTES
+
     def __init__(self, n):
         tApi = TransitApi()
         tApi.buildRoutes()
         self.routes = []
         for rt_id in routes_ids:
             rtJson = tApi[rt_id]
-            stops = [Stop(stop['lon'],stop['lat']) for stop in rtJson['stops']]
+            stops = [Stop(stop['lon'], stop['lat'])
+                     for stop in rtJson['stops']]
             rt = Route(rt_id, rtJson['rtclr'], stops, n)
-            
 
     def all(self):
         for k in self.routes:
