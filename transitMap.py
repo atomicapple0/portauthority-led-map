@@ -1,63 +1,89 @@
 from util import *
-from data import *
 from transitApi import TransitApi
+import shapely.geometry as geom
 
 
 class Bus:
-    def __init__(self, id, route, destination, lat, lon, timestamp):
+    def __init__(self, route, id, destination, lon, lat):
         self.id = id
         self.route = route
-        direction = None  # To Do ####
-        self.direction = direction
-        self.location = (lat, lon)
-        self.timestamp = timestamp
+        self.location = Location(lon, lat)
         self.currStop = None
 
-# Stop = collections.namedtuple('Stop', ['x', 'y'])
-
-
 class Route:
-    def __init__(self, id, color, stops, n):
+    # ----- DATA STRUCTURE -----
+    # _.id = ('61A', '61B', '61C', '61D')
+    # _.color = '#123456'
+    # _.stops = [... (lon,lat)]
+    # _.buses = [... <Bus object>]
+    # --------------------------
+
+    def __init__(self, id):
         self.id = id
-        self.color = color
-        self.stops = self.resampleStops(stops, n)
-        self.bus_ids = None
-        self.buses = None
+        self.subroutes = ROUTES_ACTIVE[id]
+        self.color = ROUTES_COLOR[id]
+        # self.buses = self.getBuses()
+        
+        pids = ROUTES_PATTERN[id]
+        print(pids)
+        patternMainJSON = tApi.getPattern(pids[0])
+        patternMain = [Stop(pt['lon'],pt['lat']) for pt in patternMainJSON['pt']]
+        self.patternMain = resampleStops(patternMain)
 
-    def resampleStops(self, stops, n):
-        I = pathLength(stops) / (n-1)
-        D = 0
-        newStops = stops[0]
-        for i in range(1, len(stops)):
-            d = distance(stops[i-1], stops[i])
-            if (D+d) >= I:
-                q = Stop()
-                q.x = stops[i-1] + ((I-D)/d) * (stops[i] - stops[i-1])
-                q.y = stops[i-1] + ((I-D)/d) * (stops[i] - stops[i-1])
-                newStops.append(q)
-                stops.insert(i, q)
-                D = 0
-            else:
-                D = D+d
-        return newStops
+        if len(pids) > 1:
+            patternBranchJSON = tApi.getPattern(pids[1])
+            patternBranch = [Stop(pt['lon'],pt['lat']) for pt in patternBranchJSON['pt']]
+            patternBranch = resampleStops(patternBranch)
+            
+            line = geom.LineString(self.patternMain)
+            self.patternBranch = []
+            for point in patternBranch:
+                geompt = geom.Point(point.lon,point.lat)
+                unitlessDist = line.distance(geompt)
+                dist = distance((llon,ulat),(llon + unitlessDist,ulat))
+                if dist > STOP_DIST:
+                    print(dist)
+                    self.patternBranch.append(point)
 
+    
+    def getBuses(self):
+        busesJSON = tApi.getBuses(self.id)
+        buses = []
+        for busJSON in busesJSON:
+            busJSON = busJSON
+            buses.append(Bus(self.id,
+                             busJSON['vid'],         
+                             busJSON['des'],
+                             busJSON['lon'],
+                             busJSON['lat']))
+        return buses
 
-class Routes:
-    routes_ids = ACTIVE_ROUTES
+class Transit:
+    # ----- DATA STRUCTURE -----
+    # _.routes.keys() = dict_keys(['BLLB', 'BLSV', ... <route ids> ])
+    # _.routes['61A'] = <Route object>
+    # --------------------------
 
-    def __init__(self, n):
-        tApi = TransitApi()
-        tApi.buildRoutes()
-        self.routes = []
-        for rt_id in routes_ids:
-            rtJson = tApi[rt_id]
-            stops = [Stop(stop['lon'], stop['lat'])
-                     for stop in rtJson['stops']]
-            rt = Route(rt_id, rtJson['rtclr'], stops, n)
+    def __init__(self):
+        self.routes = {}
+        for rtName in ROUTES_ACTIVE.keys():
+            self.routes[rtName] = Route(rtName)
 
-    def all(self):
-        for k in self.routes:
-            yield self.routes[k]
+    # def all(self):
+    #     for rtid in ROUTES_ACTIVE:
+    #         yield self.routes[rtid]
 
-    def get(self, name):
-        return self.routes[name]
+    # def get(self, rtid):
+    #     return self.routes[rtid]
+
+global tApi
+tApi = TransitApi()
+tApi.buildRoutes()
+
+T = Transit()
+
+plotPGH(T.routes['61s'].patternMain)
+plotPGH(T.routes['61s'].patternBranch)
+plotPGH(T.routes['54'].patternMain)
+plotPGH(T.routes['54'].patternBranch)
+
