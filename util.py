@@ -74,6 +74,9 @@ def pathLength(stops):
         d += distance(stops[i-1], stops[i])
     return d
 
+def coordDist(unitlessDist):
+    return distance((llon,ulat),(llon + unitlessDist,ulat))
+
 
 def resampleStops(stops):
     n = int(pathLength(stops) // STOP_DIST)

@@ -25,25 +25,62 @@ class Route:
         # self.buses = self.getBuses()
         
         pids = ROUTES_PATTERN[id]
-        print(pids)
         patternMainJSON = tApi.getPattern(pids[0])
         patternMain = [Stop(pt['lon'],pt['lat']) for pt in patternMainJSON['pt']]
         self.patternMain = resampleStops(patternMain)
 
         if len(pids) > 1:
-            patternBranchJSON = tApi.getPattern(pids[1])
-            patternBranch = [Stop(pt['lon'],pt['lat']) for pt in patternBranchJSON['pt']]
-            patternBranch = resampleStops(patternBranch)
+            patternSecondaryJSON = tApi.getPattern(pids[1])
+            patternSecondary = [Stop(pt['lon'],pt['lat']) for pt in patternSecondaryJSON['pt']]
+            patternSecondary = resampleStops(patternSecondary)
             
             line = geom.LineString(self.patternMain)
-            self.patternBranch = []
-            for point in patternBranch:
+            patternBranches = []
+            isPrevBranch = False
+            numBranches = 0
+            for point in patternSecondary:
                 geompt = geom.Point(point.lon,point.lat)
                 unitlessDist = line.distance(geompt)
-                dist = distance((llon,ulat),(llon + unitlessDist,ulat))
+                dist = coordDist(unitlessDist)
                 if dist > STOP_DIST:
-                    print(dist)
-                    self.patternBranch.append(point)
+                    if isPrevBranch:
+                        patternBranches[numBranches - 1].append(point)
+                    else:
+                        patternBranches.append([point])
+                        numBranches += 1
+                    isPrevBranch = True
+                else:
+                    isPrevBranch = False
+            
+            # for branch in patternBranches:
+            #     plotPGH(branch)
+            
+            extend = True
+            while extend and len(patternBranches) > 1:
+                extend = False
+                extendPatternBranches = []
+                for i in range(1,len(patternBranches),2):
+                    prevBranch = patternBranches[i-1]
+                    currBranch = patternBranches[i]
+                    prevLine = geom.LineString(prevBranch)
+                    currLine = geom.LineString(currBranch)
+                    unitlessDist = prevLine.distance(currLine) 
+                    dist = coordDist(unitlessDist)
+                    if dist < 50 * STOP_DIST:
+                        extendPatternBranches.append(prevBranch + currBranch)
+                        extend = True
+                    else:
+                        extendPatternBranches.append(prevBranch) 
+                        extendPatternBranches.append(currBranch)
+                odd = [] if len(patternBranches) % 2 == 0 else [patternBranches[len(patternBranches) - 1]]
+                patternBranches = extendPatternBranches + odd
+
+
+            self.patternBranches = []
+            for branch in extendPatternBranches:
+                if pathLength(branch) > 10 * STOP_DIST:
+                    self.patternBranches.append(branch)
+            
 
     
     def getBuses(self):
@@ -83,7 +120,9 @@ tApi.buildRoutes()
 T = Transit()
 
 plotPGH(T.routes['61s'].patternMain)
-plotPGH(T.routes['61s'].patternBranch)
+plotPGH(T.routes['61s'].patternBranches[0])
+plotPGH(T.routes['61s'].patternBranches[1])
 plotPGH(T.routes['54'].patternMain)
-plotPGH(T.routes['54'].patternBranch)
+plotPGH(T.routes['54'].patternBranches[0])
+plotPGH(T.routes['54'].patternBranches[1])
 
