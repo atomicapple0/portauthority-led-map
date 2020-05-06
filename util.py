@@ -12,9 +12,9 @@ OUTBOUND = False
 
 ROUTES_ACTIVE = {'54':['54'], '61s':['61A', '61B', '61C', '61D'], '71B':['71B'], '28X':['28X']}
 ROUTES_COLOR = {'54':0xFF0000, '61s':0x00FF00, '71B':0x0000FF, '28X':0xFFFF00}
-ROUTES_PATTERN = {'54':[7049, 7132], '61s':[7254,6782], '71B':[6571], '28X':[7249]}
+ROUTES_PATTERN = {'54':[7049, 7132], '61s':[7254,6782], '71B':[6571], '28X':[7154]}
 
-STOP_DIST = 100  # (in meters)
+STOP_DIST = 500  # (in meters)
 
 ROUTE_DESTINATIONS = {
     '54':
@@ -43,10 +43,10 @@ ROUTE_DESTINATIONS = {
 
 global llon, rlon, blat, ulat
 
-llon = -80.05
-rlon = -79.89
-blat = 40.40
-ulat = 40.48
+llon = -80.022
+rlon = -79.915
+blat = 40.422
+ulat = 40.467
 
 
 def read(filename):
@@ -63,6 +63,9 @@ def write_json(filename, text):
     with open(filename, 'w') as f:
         json.dump(text, f, indent=4)
 
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
 
 def distance(a, b):
     return geodesic(a, b).ft
@@ -78,8 +81,8 @@ def coordDist(unitlessDist):
     return distance((llon,ulat),(llon + unitlessDist,ulat))
 
 
-def resampleStops(stops):
-    n = int(pathLength(stops) // STOP_DIST)
+def resampleStops(stops, d):
+    n = int(pathLength(stops) // d)
     line = LineString(stops)
     newStops = [line.interpolate(i/float(n - 1), normalized=True)
                 for i in range(n)]
@@ -87,21 +90,27 @@ def resampleStops(stops):
     return newStops
 
 
-def plotPGH(points):
+def plotPGH(shapes):
     import numpy as np
     import pandas as pd
     import geopandas as gpd
     from shapely.geometry import Point, Polygon
     import matplotlib.pyplot as plt
 
-    df = pd.DataFrame({'lon':[point.lon for point in points],
-                       'lat':[point.lat for point in points]})
-    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat))
+    try:
+        x = shapes[0][0][0]
+    except:
+        shapes = [shapes]
 
     map = gpd.read_file('data/mapfiles/Neighborhood_SNAP.shp')
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(10,8))
     map.plot(ax=ax, alpha=0.4,color='green')
-    gdf.plot(ax=ax, color='red', alpha=0.5, markersize=10)
+    colors = ['b', 'g', 'r', 'c', 'm', 'k', 'w', 'b']
+    for i,shape in enumerate(shapes):
+        df = pd.DataFrame({'lon':[point.lon for point in shape],
+                        'lat':[point.lat for point in shape]})
+        gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat))
+        gdf.plot(ax=ax, color=colors[i], alpha=0.5, markersize=5)
     plt.xlim(llon,rlon)
     plt.ylim(blat,ulat)
     plt.show()

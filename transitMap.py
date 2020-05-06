@@ -1,5 +1,5 @@
 from util import *
-from transitApi import TransitApi
+from transitApi import *
 import shapely.geometry as geom
 
 
@@ -22,15 +22,17 @@ class Route:
         self.id = id
         self.subroutes = ROUTES_ACTIVE[id]
         self.color = ROUTES_COLOR[id]
+        self.tApi = TransitApi()
+        self.tApi.buildRoutes()
         # self.buses = self.getBuses()
         
         pids = ROUTES_PATTERN[id]
-        patternMainJSON = tApi.getPattern(pids[0])
+        patternMainJSON = self.tApi.getPattern(pids[0])
         patternMain = [Stop(pt['lon'],pt['lat']) for pt in patternMainJSON['pt']]
         self.patternMain = resampleStops(patternMain)
 
         if len(pids) > 1:
-            patternSecondaryJSON = tApi.getPattern(pids[1])
+            patternSecondaryJSON = self.tApi.getPattern(pids[1])
             patternSecondary = [Stop(pt['lon'],pt['lat']) for pt in patternSecondaryJSON['pt']]
             patternSecondary = resampleStops(patternSecondary)
             
@@ -84,7 +86,7 @@ class Route:
 
     
     def getBuses(self):
-        busesJSON = tApi.getBuses(self.id)
+        busesJSON = self.tApi.getBuses(self.id)
         buses = []
         for busJSON in busesJSON:
             busJSON = busJSON
@@ -113,16 +115,16 @@ class Transit:
     # def get(self, rtid):
     #     return self.routes[rtid]
 
-global tApi
-tApi = TransitApi()
-tApi.buildRoutes()
 
 T = Transit()
 
-plotPGH(T.routes['61s'].patternMain)
-plotPGH(T.routes['61s'].patternBranches[0])
-plotPGH(T.routes['61s'].patternBranches[1])
-plotPGH(T.routes['54'].patternMain)
-plotPGH(T.routes['54'].patternBranches[0])
-plotPGH(T.routes['54'].patternBranches[1])
+# plotPGH(T.routes['61s'].patternMain)
+# plotPGH(T.routes['61s'].patternBranches[0])
+# plotPGH(T.routes['61s'].patternBranches[1])
+# plotPGH(T.routes['54'].patternMain)
+# plotPGH(T.routes['54'].patternBranches[0])
+# plotPGH(T.routes['54'].patternBranches[1])
 
+mass = T.routes['28X'].patternMain + T.routes['71B'].patternMain + T.routes['61s'].patternMain +  T.routes['61s'].patternBranches[0] + T.routes['61s'].patternBranches[1] + T.routes['54'].patternMain +  T.routes['54'].patternBranches[0] +  T.routes['54'].patternBranches[1]
+plotPGH(mass)
+plotPGH(T.routes['71B'].patternMain)
