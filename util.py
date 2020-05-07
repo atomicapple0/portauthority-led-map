@@ -10,13 +10,22 @@ Location = collections.namedtuple('Location', ['lon', 'lat'])
 INBOUND = True
 OUTBOUND = False
 
+# 54-0 94
+# 54-1 19
+# 61s-0 94
+# 61s-1 13
+# 71B-0 78
+# 28X-0 87
+
 ROUTES_ACTIVE = {'54':['54'], '61s':['61A', '61B', '61C', '61D'], '71B':['71B'], '28X':['28X']}
 ROUTES_COLOR = {'54':0xFF0000, '61s':0x00FF00, '71B':0x0000FF, '28X':0xFFFF00}
-ROUTES_PATTERN = {'54':[7049, 7132], '61s':[7254,6782], '71B':[6571], '28X':[7154]}
+ROUTES_PIDS = {'54':[7049, 7132], '61s':[7254,6782], '71B':[6571], '28X':[7154]}
+ROUTES_PATTERNS = {'54':['54-0'], '61s':['61s-0','61s-1'], '71B':['71B-0','61s-0'], '28X':['28X-0']}
+PATTERNS_ROUTES = {'54-0':['54'],'54-1':['54'],'61s-0':['61','71B'],'61s-1':['61','71B'],'71B-0':['71B'],'28X-0':['28X']}
+PATTERNS_PINID = {'54-0':0,'54-1':1,'61s-0':2,'61s-1':3,'71B-0':4,'28X-0':5}
+STOP_DIST = 500  # (in "meters")
 
-STOP_DIST = 500  # (in meters)
-
-ROUTE_DESTINATIONS = {
+ROUTES_DESTINATION = {
     '54':
         {'North Side': INBOUND,
          'South Side - South Hills Junct.': OUTBOUND,
